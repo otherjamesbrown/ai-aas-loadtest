@@ -1,0 +1,107 @@
+apiVersion: loadtest.ai-aas.dev/v1
+kind: LoadTestScenario
+metadata:
+  name: single-org-50-users
+  namespace: load-testing
+  labels:
+    test-type: performance
+    scale: medium
+  annotations:
+    description: "Single organization with 50 concurrent users testing realistic workload"
+
+spec:
+  organizations:
+    count: 1
+    namePrefix: "perf-test-org"
+    budget:
+      limitUSD: 100.0
+      dailyUSD: 50.0
+      warnAtUSD: 80.0
+      enableAlerts: true
+
+  users:
+    perOrg:
+      min: 50
+      max: 50
+    namePrefix: "perf-test-user"
+    apiKeys:
+      perUser: 1
+      namePrefix: "perf-test-key"
+      expiryDays: 7
+
+  userBehavior:
+    thinkTimeSeconds:
+      base: 10
+      variance: 5
+      distribution: "gaussian"
+      min: 2
+      max: 30
+    sessionDuration:
+      min: 300
+      max: 600
+    questionsPerSession:
+      min: 5
+      max: 15
+    conversationStyle:
+      multiTurnProbability: 0.5
+      turnsPerConversation:
+        min: 2
+        max: 6
+      contextRetention: true
+    errorHandling:
+      retryAttempts: 3
+      retryBackoffMs: 2000
+      ignoreErrorCodes: [429, 503]
+      stopOnErrors: 50
+
+  targets:
+    apiRouterUrl: "https://api.your-platform.com"
+    userOrgUrl: "https://admin.your-platform.com"
+    tlsVerify: true
+    timeout: 60
+
+  limits:
+    maxCostUSD: 100.0
+    maxDurationSec: 3600
+    maxErrorRate: 0.05
+    maxConcurrentReqs: 50
+
+  scenarioMix:
+    scenarios:
+      - name: "simple-question-answering"
+        weight: 75
+      - name: "document-analysis"
+        weight: 25
+
+  testTypes:
+    - name: "random_short"
+      weight: 60
+      questionStrategy: "mixed"
+      cacheBehavior: "avoid"
+      modelTargeting:
+        slmModels: ["gpt-3.5-turbo"]
+        mediumModels: ["gpt-4o"]
+        rules:
+          - condition: "query_length < 100"
+            targetType: "slm"
+      streamingResponse: true
+
+    - name: "long_document"
+      weight: 30
+      questionStrategy: "technical"
+      cacheBehavior: "mixed"
+      documentLibrary:
+        enabled: true
+        bucketName: "load-test-documents"
+        documentPaths: ["technical/", "manuals/"]
+        sampleSize: 10
+      modelTargeting:
+        mediumModels: ["gpt-4o"]
+      streamingResponse: true
+
+    - name: "cached"
+      weight: 10
+      questionStrategy: "historical"
+      cacheBehavior: "prefer"
+      cacheSalt: "test-salt-123"
+      streamingResponse: false

@@ -1,0 +1,47 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+*.test
+*.out
+load-test-worker
+
+# Go
+go.work
+go.work.sum
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+coverage.txt
+*.prof
+
+# Kubernetes
+*.kubeconfig
+kubeconfig
+
+# Environment
+.env
+.env.local
+*.pem
+*.key
+
+# Build artifacts
+dist/
+build/
+
+# Temporary files
+tmp/
+temp/

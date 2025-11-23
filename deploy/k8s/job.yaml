@@ -1,0 +1,55 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: load-test-smoke
+  namespace: load-testing
+  labels:
+    app: load-test-worker
+    test-type: smoke
+spec:
+  # Run job once, don't retry on failure
+  backoffLimit: 0
+
+  # Clean up completed jobs after 1 hour
+  ttlSecondsAfterFinished: 3600
+
+  template:
+    metadata:
+      labels:
+        app: load-test-worker
+        test-type: smoke
+    spec:
+      serviceAccountName: load-test-worker
+      restartPolicy: Never
+
+      containers:
+      - name: load-test-worker
+        image: otherjamesbrown/ai-aas-loadtest:latest
+        imagePullPolicy: Always
+
+        command:
+        - /app/load-test-worker
+        - --config=/config/load-test-config.yaml
+        - --log-level=info
+
+        env:
+        - name: PUSHGATEWAY_URL
+          value: "http://prometheus-pushgateway.monitoring.svc.cluster.local:9091"
+
+        volumeMounts:
+        - name: config
+          mountPath: /config
+          readOnly: true
+
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+
+      volumes:
+      - name: config
+        configMap:
+          name: load-test-config-smoke

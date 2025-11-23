@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: load-test-config-smoke
+  namespace: load-testing
+  labels:
+    test-type: smoke
+data:
+  load-test-config.yaml: |
+    apiVersion: loadtest.ai-aas.dev/v1
+    kind: LoadTestScenario
+    metadata:
+      name: smoke-test
+      namespace: load-testing
+      labels:
+        test-type: smoke
+        priority: high
+      annotations:
+        description: "Minimal smoke test with 1 org and 5 users"
+
+    spec:
+      organizations:
+        count: 1
+        namePrefix: "smoke-test-org"
+        budget:
+          limitUSD: 10.0
+          dailyUSD: 5.0
+          warnAtUSD: 8.0
+          enableAlerts: false
+
+      users:
+        perOrg:
+          min: 5
+          max: 5
+        namePrefix: "smoke-test-user"
+        apiKeys:
+          perUser: 1
+          namePrefix: "smoke-test-key"
+          expiryDays: 1
+
+      userBehavior:
+        thinkTimeSeconds:
+          base: 5
+          variance: 2
+          distribution: "uniform"
+          min: 1
+          max: 10
+        questionsPerSession:
+          min: 3
+          max: 5
+        conversationStyle:
+          multiTurnProbability: 0.2
+          turnsPerConversation:
+            min: 2
+            max: 4
+          contextRetention: true
+        errorHandling:
+          retryAttempts: 3
+          retryBackoffMs: 1000
+          ignoreErrorCodes: [429]
+          stopOnErrors: 10
+
+      targets:
+        apiRouterUrl: "http://api-router-service.default.svc.cluster.local:8080"
+        userOrgUrl: "http://user-org-service.default.svc.cluster.local:8081"
+        tlsVerify: false
+        timeout: 30
+
+      limits:
+        maxCostUSD: 5.0
+        maxRequests: 100
+        maxDurationSec: 300
+        maxErrorRate: 0.1
+        maxConcurrentReqs: 10
